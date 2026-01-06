@@ -891,29 +891,27 @@ export class PacketHandler {
         deviceId
       );
       if (existingDeviceWithSameId && existingDeviceWithSameId.online) {
-        // 设备ID在线，记录警告日志并返回错误包
+        // 设备ID在线，将之前的设备设为离线
         logger.warn(
-          `[ID冲突-在线] 设备ID ${deviceId} 已被其他客户端使用，IP: ${this.formatIp(
+          `[ID冲突-离线] 设备ID ${deviceId} 已在线，将原设备设为离线，IP: ${this.formatIp(
             existingDeviceWithSameId.virtual_ip
           )}`
         );
-        const errorMessage = `ID在线 已被使用 设备名：${
-          existingDeviceWithSameId.name
-        } 设备IP：${this.formatIp(existingDeviceWithSameId.virtual_ip)}`;
-        const errorPayload = new TextEncoder().encode(errorMessage);
-        const errorPacket = NetPacket.new_encrypt(
-          12 + errorPayload.length + ENCRYPTION_RESERVED
+
+        // 设置原设备为离线状态
+        existingDeviceWithSameId.online = false;
+        existingDeviceWithSameId.tcp_sender = null;
+        existingDeviceWithSameId.offline_timestamp = Date.now();
+        networkInfo.epoch += 1;
+
+        logger.info(
+          `[设备离线] 主机名:${existingDeviceWithSameId.name} ID:${
+            existingDeviceWithSameId.device_id
+          } IP:${this.formatIp(existingDeviceWithSameId.virtual_ip)} 已设为离线`
         );
 
-        errorPacket.set_protocol(PROTOCOL.ERROR);
-        errorPacket.set_transport_protocol(4); // IpAlreadyExists
-        errorPacket.set_destination(0xffffffff); // 设置目标地址为客户端
-        errorPacket.set_gateway_flag(true); // 设置网关标志
-        errorPacket.first_set_ttl(15); // 设置TTL
-        errorPacket.set_payload(errorPayload);
-
-        logger.info(`[注册-响应] 返回设备ID冲突错误包给客户端`);
-        return errorPacket;
+        // 使用原设备的IP
+        virtualIp = existingDeviceWithSameId.virtual_ip;
       }
       // 检查IP是否已被其他设备ID使用 - 不抛出错误，记录日志并返回错误包
       if (requestedIp !== 0) {
