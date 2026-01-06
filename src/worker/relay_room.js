@@ -123,10 +123,14 @@ export class RelayRoom {
       const currentVersion = this.env.VERSION || Date.now().toString();
 
       const storedData = await this.state.storage.get("deployData");
-      if (storedData && storedData.version === currentVersion && storedData.startTime > 0) {
+      if (
+        storedData &&
+        storedData.version === currentVersion &&
+        storedData.startTime > 0
+      ) {
         // 版本相同，恢复原有启动时间
         this.startTime = storedData.startTime;
-       // logger.info(`[RelayRoom-初始化] 从存储中恢复启动时间: ${this.getStartTimeBeijing()}`);
+        // logger.info(`[RelayRoom-初始化] 从存储中恢复启动时间: ${this.getStartTimeBeijing()}`);
       } else {
         // 版本不同或首次部署，设置新的启动时间
         this.startTime = Date.now();
@@ -680,11 +684,11 @@ export class RelayRoom {
             <div v-if="showError" class="error-message">{{ errorMessage }}</div>    
             <div class="form-group">    
                 <label>组网Token：</label>    
-                <input v-model="loginForm.token" placeholder="请输入组网token" />    
+                <input v-model="loginForm.token" placeholder="请输入组网token" @keyup.enter="login" />    
             </div>    
             <div class="form-group">    
                 <label>网关IP：</label>    
-                <input v-model="loginForm.gatewayIp" placeholder="请输入对应的网关IP" />    
+                <input v-model="loginForm.gatewayIp" placeholder="请输入对应的网关IP" @keyup.enter="login" />    
             </div>    
             <button class="submit-btn" @click="login">确认查询</button>    
         </div>    
@@ -1567,7 +1571,7 @@ export class RelayRoom {
   }
 
   async fetch(request) {
-  await this.init();
+    await this.init();
     const clientIp = this.getClientIp(request);
     const url = new URL(request.url);
     // logger.debug(`处理请求: ${url.pathname}`);
